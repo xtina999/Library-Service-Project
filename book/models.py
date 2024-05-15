@@ -11,7 +11,10 @@ class Book(models.Model):
 
     title = models.CharField(max_length=255)
     author = models.CharField(max_length=255)
-    cover = models.CharField(max_length=4, choices=CoverChoices.choices)
+    cover = models.CharField(
+        max_length=4,
+        choices=CoverChoices.choices
+    )
     inventory = models.PositiveIntegerField(
         validators=[MinValueValidator(1)]
     )
