@@ -1,18 +1,19 @@
 from typing import Optional
 
-from rest_framework import generics, viewsets
-from rest_framework.authtoken.serializers import AuthTokenSerializer
+from rest_framework import generics, viewsets, permissions
+from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.settings import api_settings
 
-
 from user.models import User
-from user.serializers import UserSerializer
+from user.serializers import UserSerializer, AuthTokenSerializer
 
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    permission_classes = [permissions.IsAdminUser]
 
 
 class CreateUserView(generics.CreateAPIView):
@@ -26,6 +27,7 @@ class CreateTokenView(ObtainAuthToken):
 
 class ManagerUserView(generics.RetrieveUpdateAPIView):
     serializer_class = UserSerializer
+    authentication_classes = (TokenAuthentication, )
 
     def get_object(self) -> Optional[User]:
         return self.request.user

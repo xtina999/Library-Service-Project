@@ -45,14 +45,10 @@ class AuthTokenSerializer(serializers.Serializer):
     password = serializers.CharField(
         label=_("Password"), style={"input_type": "password"}
     )
-    first_name = serializers.CharField(label=_("First name"), required=False)
-    last_name = serializers.CharField(label=_("Last name"), required=False)
 
     def validate(self, attrs):
         email = attrs.get("email")
         password = attrs.get("password")
-        first_name = attrs.get("first_name")
-        last_name = attrs.get("last_name")
 
         if email and password:
             user = authenticate(email=email, password=password)
@@ -60,21 +56,14 @@ class AuthTokenSerializer(serializers.Serializer):
             if user:
                 if not user.is_active:
                     msg = _("User account is disabled.")
-                    raise serializers.ValidationError(msg, code="authorization")
-
-                # Optionally, you can validate first_name and last_name if needed
-                if first_name and user.first_name != first_name:
-                    msg = _("First name does not match.")
-                    raise serializers.ValidationError(msg, code="authorization")
-
-                if last_name and user.last_name != last_name:
-                    msg = _("Last name does not match.")
-                    raise serializers.ValidationError(msg, code="authorization")
+                    raise serializers.ValidationError(
+                        msg, code="authorization"
+                    )
             else:
                 msg = _("Unable to log in with provided credentials.")
                 raise serializers.ValidationError(msg, code="authorization")
         else:
-            msg = _("Must include 'email' and 'password'.")
+            msg = _("Must include 'username' and 'password'.")
             raise serializers.ValidationError(msg, code="authorization")
 
         attrs["user"] = user
