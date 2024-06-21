@@ -8,15 +8,21 @@ from .serializers import BorrowingSerializer, BorrowingCreateSerializer
 class BorrowingViewSet(viewsets.ModelViewSet):
     queryset = Borrowing.objects.all()
     serializer_class = BorrowingSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         queryset = super().get_queryset()
         user_id = self.request.query_params.get("user_id")
         is_active = self.request.query_params.get("is_active")
 
+        if not self.request.user.is_staff:
+            queryset = queryset.filter(user=self.request.user)
+
         if user_id:
-            queryset = queryset.filter(user_id=user_id)
+            if self.request.user.is_staff:
+                queryset = queryset.filter(user_id=user_id)
+            else:
+                queryset = queryset.filter(user=self.request.user, user_id=user_id)
 
         if is_active:
             if is_active.lower() == "true":
@@ -32,7 +38,7 @@ class BorrowingViewSet(viewsets.ModelViewSet):
         return BorrowingSerializer
 
     def perform_create(self, serializer):
-        serializer.save()
+        serializer.save(user=self.request.user)
 
     @action(detail=True, methods=["post"])
     def return_book(self, request, pk=None):
