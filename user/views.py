@@ -1,6 +1,7 @@
 from typing import Optional
 
 from rest_framework import generics, viewsets, permissions
+
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.permissions import IsAuthenticated
@@ -27,7 +28,8 @@ class CreateTokenView(ObtainAuthToken):
 
 class ManagerUserView(generics.RetrieveUpdateAPIView):
     serializer_class = UserSerializer
-    authentication_classes = (TokenAuthentication, )
+    authentication_classes = (JWTAuthentication, )
+    permission_classes = (IsAuthenticated, )
 
     def get_object(self) -> Optional[User]:
         return self.request.user
