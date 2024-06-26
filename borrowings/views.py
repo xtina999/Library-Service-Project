@@ -6,6 +6,7 @@ from rest_framework.response import Response
 
 from .models import Borrowing
 from .serializers import BorrowingSerializer, BorrowingCreateSerializer
+from .utils import send_telegram_message
 
 
 class BorrowingViewSet(viewsets.ModelViewSet):
@@ -42,10 +43,13 @@ class BorrowingViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         if not self.request.user.is_staff:
-            serializer.save(user=self.request.user)
+            borrowing = serializer.save(user=self.request.user)
         else:
             user = serializer.validated_data.get('user', self.request.user)
-            serializer.save(user=user)
+            borrowing = serializer.save(user=user)
+
+        message = f"New borrowing created:\nUser: {borrowing.user.first_name}{borrowing.user.last_name}({borrowing.user.email})\nBook: {borrowing.book.title}\nExpected Return Date: {borrowing.expected_return_date}"
+        send_telegram_message(message)
 
     def update(self, request, *args, **kwargs):
         if not request.user.is_staff:
