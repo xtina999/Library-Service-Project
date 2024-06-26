@@ -1,20 +1,24 @@
 from typing import Optional
 
-from rest_framework import generics
+from rest_framework import generics, viewsets, permissions
+
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.settings import api_settings
-from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from user.models import User
-from user.permissions import AllowAllPermission
 from user.serializers import UserSerializer, AuthTokenSerializer
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAdminUser]
 
 
 class CreateUserView(generics.CreateAPIView):
     serializer_class = UserSerializer
-    permission_classes = (AllowAllPermission,)
 
 
 class CreateTokenView(ObtainAuthToken):

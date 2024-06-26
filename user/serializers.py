@@ -1,33 +1,42 @@
-from django.contrib.auth import authenticate
+from django.contrib.auth import get_user_model, authenticate
 from rest_framework import serializers
 from django.utils.translation import gettext as _
 
-from user.models import User
+from django.contrib.auth import get_user_model
+from rest_framework import serializers
 
 
 class UserSerializer(serializers.ModelSerializer):
+    password_confirm = serializers.CharField(
+        label=_("Confirm Password"), write_only=True, style={"input_type": "password"}
+    )
+
     class Meta:
-        model = User
-        fields = ["id", "email", "first_name", "last_name", "password"]
-        extra_kwargs = {"password": {'write_only': True}}
+        model = get_user_model()
+        fields = ("id", "email", "password", "password_confirm", "first_name", "last_name", "is_staff")
+        read_only_fields = ("is_staff",)
+        extra_kwargs = {
+            "password": {"write_only": True, "min_length": 5, "style": {"input_type": "password"}},
+            "first_name": {"required": True},
+            "last_name": {"required": True},
+        }
+
+    def validate(self, attrs):
+        if attrs["password"] != attrs["password_confirm"]:
+            raise serializers.ValidationError("Passwords do not match.")
+
+        return attrs
 
     def create(self, validated_data):
-        user = User(
-            email=validated_data["email"],
-            first_name=validated_data["first_name"],
-            last_name=validated_data["last_name"],
-        )
-        user.set_password(validated_data["password"])
-        user.save()
-        return user
+        validated_data.pop("password_confirm")
+        return get_user_model().objects.create_user(**validated_data)
 
     def update(self, instance, validated_data):
-        instance.email = validated_data.get("email", instance.email)
-        instance.first_name = validated_data.get("first_name", instance.first_name)
-        instance.last_name = validated_data.get("last_name", instance.last_name)
-        if "password" in validated_data:
-            instance.set_password(validated_data["password"])
-        instance.save()
+        password = validated_data.pop("password", None)
+        instance = super().update(instance, validated_data)
+        if password:
+            instance.set_password(password)
+            instance.save()
         return instance
 
 
