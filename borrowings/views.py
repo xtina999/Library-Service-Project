@@ -1,6 +1,9 @@
+from datetime import date
+
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
+
 from .models import Borrowing
 from .serializers import BorrowingSerializer, BorrowingCreateSerializer
 
@@ -38,19 +41,39 @@ class BorrowingViewSet(viewsets.ModelViewSet):
         return BorrowingSerializer
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        if not self.request.user.is_staff:
+            serializer.save(user=self.request.user)
+        else:
+            user = serializer.validated_data.get('user', self.request.user)
+            serializer.save(user=user)
 
-    @action(detail=True, methods=["post"])
+    def update(self, request, *args, **kwargs):
+        if not request.user.is_staff:
+            return Response({"detail": "Permission denied."}, status=status.HTTP_403_FORBIDDEN)
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        if not request.user.is_staff:
+            return Response({"detail": "Permission denied."}, status=status.HTTP_403_FORBIDDEN)
+        return super().partial_update(request, *args, **kwargs)
+
+    @action(detail=True, methods=["post", "get"], url_path='return_book')
     def return_book(self, request, pk=None):
         borrowing = self.get_object()
+
+        if not request.user.is_staff and borrowing.user != request.user:
+            return Response({"detail": "Permission denied."}, status=status.HTTP_403_FORBIDDEN)
+
         if borrowing.actual_return_date is not None:
             return Response({"detail": "Book already returned"}, status=status.HTTP_400_BAD_REQUEST)
 
-        borrowing.actual_return_date = request.data.get("actual_return_date")
-        borrowing.save()
+        if request.method == "POST":
+            borrowing.actual_return_date = date.today()
+            borrowing.save()
 
-        book = borrowing.book
-        book.inventory += 1
-        book.save()
+            book = borrowing.book
+            book.inventory += 1
+            book.save()
 
-        return Response({"detail": "Book returned successfully"})
+        serializer = BorrowingSerializer(borrowing)
+        return Response(serializer.data)
