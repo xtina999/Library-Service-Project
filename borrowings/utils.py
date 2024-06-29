@@ -19,8 +19,6 @@ def send_telegram_message(message):
         "parse_mode": 'HTML'
     }
 
-    logger.info(f"Sending message to Telegram: {message}")
-
     try:
         response = requests.post(url, json=payload)
         response.raise_for_status()
