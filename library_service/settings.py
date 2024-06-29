@@ -133,28 +133,28 @@ STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'level': 'DEBUG',
-            'class': 'logging.StreamHandler',
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "level": "DEBUG",
+            "class": "logging.StreamHandler",
         },
     },
-    'root': {
-        'handlers': ['console'],
-        'level': 'DEBUG',
+    "root": {
+        "handlers": ["console"],
+        "level": "DEBUG",
     },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': True,
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+            "propagate": True,
         },
-        'borrowings': {  # Додайте логгер для вашого додатку
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': True,
+        "borrowings": {  # Додайте логгер для вашого додатку
+            "handlers": ['console'],
+            "level": 'DEBUG',
+            "propagate": True,
         },
     },
 }
@@ -172,16 +172,16 @@ SIMPLE_JWT = {
 }
 
 
-TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
-TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 
 CELERY_TIMEZONE = "Europe/Kiev"
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_BROKER_URL = "redis://localhost:6379/0"
+CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
 CELERY_BEAT_SCHEDULE = {
-    'check-overdue-borrowings-every-three-minutes': {
-        'task': 'borrowings.tasks.check_overdue_borrowings',
-        'schedule': crontab(minute='*/3'),
+    "check-overdue-borrowings-every-day-in-22-06": {
+        "task": "borrowings.tasks.check_overdue_borrowings",
+        'schedule': crontab(hour=22, minute=6),
     },
 }
