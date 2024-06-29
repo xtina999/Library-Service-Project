@@ -17,7 +17,6 @@ class IsAdminALLORIsAuthenticatedReadOnly(BasePermission):
             or (request.user and request.user.is_staff)
         )
 
-
 class IsTicketOrderCreatorOrReadOnly(BasePermission):
     """
     Allows only author access to create and view
@@ -38,3 +37,4 @@ class IsTicketOrderCreatorOrReadOnly(BasePermission):
 class AllowAllPermission(BasePermission):
     def has_permission(self, request, view):
         return True
+
