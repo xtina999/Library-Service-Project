@@ -6,6 +6,7 @@ from rest_framework.response import Response
 
 from .models import Borrowing
 from .serializers import BorrowingSerializer, BorrowingCreateSerializer
+from .utils import send_telegram_message
 
 
 class BorrowingViewSet(viewsets.ModelViewSet):
@@ -42,19 +43,34 @@ class BorrowingViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         if not self.request.user.is_staff:
-            serializer.save(user=self.request.user)
+            borrowing = serializer.save(user=self.request.user)
         else:
             user = serializer.validated_data.get('user', self.request.user)
-            serializer.save(user=user)
+            borrowing = serializer.save(user=user)
+
+        message = (
+            f"New borrowing created:\nUser: "
+            f"{borrowing.user.first_name}{borrowing.user.last_name}"
+            f"({borrowing.user.email})\n"
+            f"Book: {borrowing.book.title}\n"
+            f"Expected Return Date: {borrowing.expected_return_date}"
+        )
+        send_telegram_message(message)
 
     def update(self, request, *args, **kwargs):
         if not request.user.is_staff:
-            return Response({"detail": "Permission denied."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "Permission denied."},
+                status=status.HTTP_403_FORBIDDEN
+            )
         return super().update(request, *args, **kwargs)
 
     def partial_update(self, request, *args, **kwargs):
         if not request.user.is_staff:
-            return Response({"detail": "Permission denied."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "Permission denied."},
+                status=status.HTTP_403_FORBIDDEN
+            )
         return super().partial_update(request, *args, **kwargs)
 
     @action(detail=True, methods=["post", "get"], url_path='return_book')
@@ -62,10 +78,16 @@ class BorrowingViewSet(viewsets.ModelViewSet):
         borrowing = self.get_object()
 
         if not request.user.is_staff and borrowing.user != request.user:
-            return Response({"detail": "Permission denied."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "Permission denied."},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         if borrowing.actual_return_date is not None:
-            return Response({"detail": "Book already returned"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Book already returned"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         if request.method == "POST":
             borrowing.actual_return_date = date.today()
