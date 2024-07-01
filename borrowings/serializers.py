@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Borrowing
+from .models import Borrowing, Payment
 from book.serializers import BookSerializer
 from user.serializers import UserSerializer
 
@@ -43,3 +43,13 @@ class BorrowingCreateSerializer(serializers.ModelSerializer):
         book.save()
         borrowing = Borrowing.objects.create(user=user, **validated_data)
         return borrowing
+
+
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = [
+            "status", "type",
+            "borrowing", "session_url",
+            "session_id", "money_to_pay"
+        ]
