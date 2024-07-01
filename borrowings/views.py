@@ -1,11 +1,16 @@
 from datetime import date
 
-from rest_framework import viewsets, status, permissions
+from rest_framework import viewsets, status, permissions, generics
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from .models import Borrowing
-from .serializers import BorrowingSerializer, BorrowingCreateSerializer
+from .models import Borrowing, Payment
+from .serializers import (
+    BorrowingSerializer,
+    BorrowingCreateSerializer,
+    PaymentSerializer
+)
 from .utils import send_telegram_message
 
 
@@ -99,3 +104,20 @@ class BorrowingViewSet(viewsets.ModelViewSet):
 
         serializer = BorrowingSerializer(borrowing)
         return Response(serializer.data)
+
+
+class PaymentListView(generics.ListCreateAPIView):
+    serializer_class = PaymentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            return Payment.objects.all()
+        return Payment.objects.filter(borrowing__user=user)
+
+
+class PaymentDetailView(generics.RetrieveAPIView):
+    queryset = Payment.objects.all()
+    serializer_class = PaymentSerializer
+    permission_classes = [IsAuthenticated]
