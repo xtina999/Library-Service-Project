@@ -1,11 +1,16 @@
 from datetime import date
 
+import stripe
+from django.conf import settings
+from django.http import HttpResponse
+from django.views import View
 from rest_framework import viewsets, status, permissions, generics
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .models import Borrowing, Payment
+from .payments_stripe_utils import create_stripe_session
 from .serializers import (
     BorrowingSerializer,
     BorrowingCreateSerializer,
@@ -106,6 +111,9 @@ class BorrowingViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
+stripe.api_key = settings.STRIPE_SECRET_KEY
+
+
 class PaymentListView(generics.ListCreateAPIView):
     serializer_class = PaymentSerializer
     permission_classes = [IsAuthenticated]
@@ -116,8 +124,37 @@ class PaymentListView(generics.ListCreateAPIView):
             return Payment.objects.all()
         return Payment.objects.filter(borrowing__user=user)
 
+    def perform_create(self, serializer):
+        borrowing_id = self.kwargs['borrowing_id']
+        borrowing = Borrowing.objects.get(id=borrowing_id)
+        payment = serializer.save(borrowing=borrowing)
+        session_url, session_id = create_stripe_session(borrowing)
+        if session_url:
+            payment.session_url = session_url
+            payment.session_id = session_id
+            payment.save()
+            return Response({
+                "status": payment.status,
+                "type": payment.type,
+                "session_url": session_url,
+                "session_id": session_id,
+                "money_to_pay": str(payment.money_to_pay)
+            }, status=status.HTTP_201_CREATED)
+        else:
+            payment.delete()
+            return Response({"detail": "Failed to create Stripe session."}, status=status.HTTP_400_BAD_REQUEST)
+
 
 class PaymentDetailView(generics.RetrieveAPIView):
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
-    permission_classes = [IsAuthenticated]
+
+
+class PaymentSuccessView(View):
+    def get(self, request, *args, **kwargs):
+        return HttpResponse("Payment successful")
+
+
+class PaymentCancelView(View):
+    def get(self, request, *args, **kwargs):
+        return HttpResponse("Payment canceled")
