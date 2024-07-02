@@ -182,6 +182,10 @@ CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
 CELERY_BEAT_SCHEDULE = {
     "check-overdue-borrowings-every-day-in-22-06": {
         "task": "borrowings.tasks.check_overdue_borrowings",
-        'schedule': crontab(hour=22, minute=6),
+        "schedule": crontab(hour=22, minute=6),
     },
 }
+
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_SUCCESS_URL = "http://localhost:8000/success/"
+STRIPE_CANCEL_URL = "http://localhost:8000/cancel/"
