@@ -13,19 +13,23 @@ class Borrowing(models.Model):
     def __str__(self):
         return f"{self.user.email} borrowed {self.book.title}"
 
-
-class Payment(models.Model):
     def calculate_borrowing_total_price(self):
         FINE_MULTIPLIER = 2
-        daily_fee = self.borrowing.book.daily_fee
-        borrow_days = (self.borrowing.actual_return_date or date.today()) - self.borrowing.borrow_date
-        borrowing_total_price = daily_fee * borrow_days.days
+        daily_fee = self.book.daily_fee
+        borrow_days = (self.actual_return_date or timezone.now().date()) - self.borrow_date
 
-        if self.borrowing.actual_return_date and self.borrowing.actual_return_date > self.borrowing.expected_return_date:
-            overdue_days = (self.borrowing.actual_return_date - self.borrowing.expected_return_date).days
+        borrow_days = max(borrow_days.days, 1)
+
+        borrowing_total_price = daily_fee * borrow_days
+
+        if self.actual_return_date and self.actual_return_date > self.expected_return_date:
+            overdue_days = (self.actual_return_date - self.expected_return_date).days
             borrowing_total_price += overdue_days * daily_fee * FINE_MULTIPLIER
 
         return borrowing_total_price
+
+
+class Payment(models.Model):
 
     class Status(models.TextChoices):
         PENDING = "Pending"
@@ -50,14 +54,14 @@ class Payment(models.Model):
         on_delete=models.CASCADE,
         related_name="payments"
     )
-    session_url = models.URLField()
-    session_id = models.CharField(max_length=255)
+    session_url = models.URLField(blank=True, null=True)  # Ensure this field is optional
+    session_id = models.CharField(max_length=255, blank=True, null=True)  # Ensure this field is optional
     money_to_pay = models.DecimalField(max_digits=10, decimal_places=2, blank=True)
 
     def save(self, *args, **kwargs):
         if not self.money_to_pay:
-            self.money_to_pay = self.calculate_borrowing_total_price()
+            self.money_to_pay = self.borrowing.calculate_borrowing_total_price()
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.type} - {self.status} - ${self.money_to_pay}"
+        return f'{self.type} - {self.status} - ${self.money_to_pay}'
