@@ -1,21 +1,38 @@
 from rest_framework import serializers
-from .models import Borrowing
+from .models import Borrowing, Payment
 from book.serializers import BookSerializer
 from user.serializers import UserSerializer
+
+
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = [
+            "status", "type",
+            "session_url", "session_id",
+            "money_to_pay"
+        ]
 
 
 class BorrowingSerializer(serializers.ModelSerializer):
     book = BookSerializer(read_only=True)
     user = UserSerializer(read_only=True)
+    payments = PaymentSerializer(many=True, read_only=True)
 
     class Meta:
         model = Borrowing
         fields = [
-            "id", "user",
-            "book", "borrow_date",
-            "expected_return_date", "actual_return_date"
+            "id", "user", "book",
+            "borrow_date", "expected_return_date",
+            "actual_return_date", "payments"
         ]
         read_only_fields = ["expected_return_date", "actual_return_date"]
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if instance.actual_return_date:
+            data['payments'] = PaymentSerializer(instance.payments.all(), many=True).data
+        return data
 
 
 class BorrowingCreateSerializer(serializers.ModelSerializer):
@@ -42,4 +59,5 @@ class BorrowingCreateSerializer(serializers.ModelSerializer):
         book.inventory -= 1
         book.save()
         borrowing = Borrowing.objects.create(user=user, **validated_data)
+
         return borrowing
