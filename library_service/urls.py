@@ -18,9 +18,13 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
+from borrowings.views import PaymentSuccessView, PaymentCancelView
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/books/", include("book.urls", namespace="books")),
     path("api/users/", include("user.urls", namespace="users")),
     path("api/borrowings/", include("borrowings.urls", namespace="borrowings")),
+    path("success/", PaymentSuccessView.as_view(), name="payment-success"),
+    path("cancel/", PaymentCancelView.as_view(), name="payment-cancel"),
 ]
