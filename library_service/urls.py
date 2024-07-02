@@ -25,6 +25,4 @@ urlpatterns = [
     path("api/books/", include("book.urls", namespace="books")),
     path("api/users/", include("user.urls", namespace="users")),
     path("api/borrowings/", include("borrowings.urls", namespace="borrowings")),
-    path("success/", PaymentSuccessView.as_view(), name="payment-success"),
-    path("cancel/", PaymentCancelView.as_view(), name="payment-cancel"),
 ]
